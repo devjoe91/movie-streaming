@@ -1,34 +1,48 @@
 import { NextResponse } from "next/server";
 
-const SAFE_KEYWORDS = [
-  "family", "classic", "animation", "cartoon", "drama", "adventure",
-  "comedy", "educational", "kids", "documentary", "short", "feature"
-];
+interface ArchiveDoc {
+  identifier: string;
+  title: string;
+  creator?: string;
+  year?: string;
+}
+
+interface ArchiveResponse {
+  response: {
+    docs: ArchiveDoc[];
+  };
+}
 
 export async function GET() {
   try {
     const res = await fetch(
-      `https://archive.org/advancedsearch.php?q=collection:(feature_films)+AND+mediatype:(movies)&fl[]=identifier,title,creator&sort[]=downloads+desc&rows=50&page=1&output=json`
+      "https://archive.org/advancedsearch.php?q=collection:feature_films+AND+mediatype:movies&fl[]=identifier,title,creator,year&sort[]=downloads+desc&rows=8&page=1&output=json",
+      { cache: "no-store" }
     );
-    const data = await res.json();
 
-    const safeMovies = data.response.docs.filter((movie: any) => {
-      const title = movie.title.toLowerCase();
-      return SAFE_KEYWORDS.some((kw) => title.includes(kw));
-    });
+    if (!res.ok) {
+      return NextResponse.json(
+        { error: "Failed to fetch featured movies" },
+        { status: res.status }
+      );
+    }
 
-    // Pick 3 random movies
-    const shuffled = safeMovies.sort(() => 0.5 - Math.random());
-    const top3 = shuffled.slice(0, 3).map((m: any) => ({
-      id: m.identifier,
-      title: m.title,
-      creator: m.creator || "Unknown",
-      playableUrl: `https://archive.org/embed/${m.identifier}`
+    const data: ArchiveResponse = await res.json();
+
+    const movies = data.response.docs.map((d) => ({
+      id: d.identifier,
+      title: d.title,
+      year: d.year || "",
+      creator: d.creator || "Unknown",
+      thumbnail: `https://archive.org/download/${d.identifier}/__ia_thumb.jpg`,
     }));
 
-    return NextResponse.json({ movies: top3 });
-  } catch (error) {
-    console.error(error);
-    return NextResponse.json({ movies: [] });
+    return NextResponse.json(movies);
+  } catch (err: unknown) {
+    console.error("Error fetching featured movies:", err);
+    return NextResponse.json(
+      { error: "Failed to fetch featured movies" },
+      { status: 500 }
+    );
   }
 }
