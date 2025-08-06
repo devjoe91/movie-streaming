@@ -17,20 +17,23 @@ async function fetchCategoryMovies(categoryId: string, page: number): Promise<Mo
   return res.json();
 }
 
-export default async function CategoryPage({
-  params,
-  searchParams,
-}: {
+interface CategoryPageProps {
   params: { id: string };
-  searchParams: { page?: string };
-}) {
-  const page = Number(searchParams.page) || 1;
-  const movies = await fetchCategoryMovies(params.id, page);
+  searchParams?: { page?: string };
+}
+
+export default async function CategoryPage({ params, searchParams }: CategoryPageProps) {
+  const { id } = params; // ✅ No need to await
+  const page = Number(searchParams?.page) || 1;
+
+  const movies = await fetchCategoryMovies(id, page);
 
   return (
     <div className="min-h-screen bg-[#1f1c17] text-white px-6 py-8">
       {/* Category Title */}
-      <h1 className="text-3xl font-bold mb-6 capitalize">{params.id.replace(/_/g, " ")}</h1>
+      <h1 className="text-3xl font-bold mb-6 capitalize">
+        {id.replace(/_/g, " ")}
+      </h1>
 
       {/* Movie Grid */}
       {movies.length > 0 ? (
@@ -61,7 +64,7 @@ export default async function CategoryPage({
       <div className="flex justify-center gap-4 mt-8">
         {page > 1 && (
           <Link
-            href={`/category/${params.id}?page=${page - 1}`}
+            href={`/category/${id}?page=${page - 1}`}
             className="px-4 py-2 bg-gray-700 rounded hover:bg-gray-600"
           >
             ← Prev
@@ -69,7 +72,7 @@ export default async function CategoryPage({
         )}
         {movies.length >= 12 && (
           <Link
-            href={`/category/${params.id}?page=${page + 1}`}
+            href={`/category/${id}?page=${page + 1}`}
             className="px-4 py-2 bg-gray-700 rounded hover:bg-gray-600"
           >
             Next →

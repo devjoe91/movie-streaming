@@ -27,11 +27,33 @@ export default function NavBar() {
   const [user, setUser] = useState<any>(null);
   const searchRef = useRef<HTMLDivElement>(null);
 
-  // Fetch categories once
+  // ✅ Safe category fetch
   useEffect(() => {
-    fetch("/api/categories")
-      .then((res) => res.json())
-      .then(setCategories);
+    async function loadCategories() {
+      try {
+        const res = await fetch("/api/categories");
+
+        if (!res.ok) {
+          throw new Error(`Failed to fetch categories: ${res.status}`);
+        }
+
+        const text = await res.text();
+
+        if (!text) {
+          console.warn("No categories returned from /api/categories");
+          setCategories([]);
+          return;
+        }
+
+        const data: Category[] = JSON.parse(text);
+        setCategories(data);
+      } catch (err) {
+        console.error("Error fetching categories:", err);
+        setCategories([]);
+      }
+    }
+
+    loadCategories();
   }, []);
 
   // Fetch current user from Supabase
@@ -56,6 +78,10 @@ export default function NavBar() {
           .then((data) => {
             setResults(data);
             setShowDropdown(true);
+          })
+          .catch((err) => {
+            console.error("Search fetch error:", err);
+            setResults([]);
           });
       }, 300);
       return () => clearTimeout(delayDebounce);

@@ -1,6 +1,9 @@
+"use client";
+
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import SaveHistory from "./SaveHistory";
+import { supabase } from "@/lib/supabaseClient";
+import { useEffect, useState } from "react";
 
 interface MovieDetail {
   id: string;
@@ -60,17 +63,47 @@ async function fetchRelatedMovies(currentId: string): Promise<Movie[]> {
     }));
 }
 
-export default async function MoviePage({ params }: { params: { id: string } }) {
-  const movie = await fetchMovieDetails(params.id);
-  if (!movie) return notFound();
+async function saveWatchHistory(userId: string, movieId: string) {
+  const { error } = await supabase
+    .from("watch_history")
+    .insert([{ user_id: userId, movie_id: movieId }]);
 
-  const related = await fetchRelatedMovies(params.id);
+  if (error) {
+    console.error("Error saving watch history:", error);
+  }
+}
+
+export default function MoviePage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const [movie, setMovie] = useState<MovieDetail | null>(null);
+  const [related, setRelated] = useState<Movie[]>([]);
+  
+  useEffect(() => {
+    const loadData = async () => {
+      const { id } = await params; // ✅ unwrap Promise in Next.js 15
+      const movieData = await fetchMovieDetails(id);
+      if (!movieData) return notFound();
+      setMovie(movieData);
+
+      const relatedMovies = await fetchRelatedMovies(id);
+      setRelated(relatedMovies);
+
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        await saveWatchHistory(user.id, id);
+      }
+    };
+
+    loadData();
+  }, [params]);
+
+  if (!movie) return null;
 
   return (
     <div className="min-h-screen bg-[#1f1c17] text-white">
-      {/* Save history client-side */}
-      <SaveHistory movieId={params.id} />
-
       <div className="p-4 md:p-8 grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Left: Player + Info */}
         <div className="md:col-span-2">
