@@ -1,4 +1,3 @@
-// app/api/movies/[categoryId]/route.ts
 import { NextResponse } from "next/server";
 
 export async function GET(
@@ -15,7 +14,7 @@ export async function GET(
       `https://archive.org/advancedsearch.php?q=collection:${categoryId}+AND+mediatype:movies&fl[]=identifier,title,creator,year&sort[]=downloads+desc&rows=12&page=${page}&output=json`,
       { cache: "no-store" }
     );
-    const data = await res.json();
+    const data: any = await res.json();
 
     const movies = data.response.docs
       .filter((d: any) => !banned.some((w) => d.title?.toLowerCase().includes(w)))
@@ -28,7 +27,8 @@ export async function GET(
       }));
 
     return NextResponse.json(movies);
-  } catch {
+  } catch (err) {
+    console.error(err);
     return NextResponse.json({ error: "Failed to fetch category movies" }, { status: 500 });
   }
 }

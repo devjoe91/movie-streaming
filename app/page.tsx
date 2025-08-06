@@ -23,13 +23,13 @@ const CATEGORIES: Category[] = [
 ];
 
 async function fetchPopular(): Promise<Movie[]> {
-  const res = await fetch("http://localhost:3000/api/popular", { cache: "no-store" });
+  const res = await fetch("/api/popular", { cache: "no-store" });
   if (!res.ok) return [];
   return res.json();
 }
 
 async function fetchMovies(categoryId: string): Promise<Movie[]> {
-  const res = await fetch(`http://localhost:3000/api/movies/${categoryId}`, { cache: "no-store" });
+  const res = await fetch(`/api/movies/${categoryId}`, { cache: "no-store" });
   if (!res.ok) return [];
   return res.json();
 }

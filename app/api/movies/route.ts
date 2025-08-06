@@ -1,42 +1,27 @@
 import { NextResponse } from "next/server";
 
-const SAFE_KEYWORDS = [
-  "family", "classic", "animation", "cartoon", "drama", "adventure",
-  "comedy", "educational", "kids", "documentary", "short", "feature"
-];
-
-export async function GET(req: Request) {
+export async function GET() {
   try {
-    const { searchParams } = new URL(req.url);
-    const category = searchParams.get("category");
-    const page = parseInt(searchParams.get("page") || "1");
-    const rows = parseInt(searchParams.get("rows") || "20");
-
-    let query = `mediatype:(movies)`;
-    if (category) query = `collection:(${category})+AND+${query}`;
-
     const res = await fetch(
-      `https://archive.org/advancedsearch.php?q=${query}&fl[]=identifier,title,creator&sort[]=downloads+desc&rows=${rows}&page=${page}&output=json`
+      "https://archive.org/advancedsearch.php?q=mediatype:movies&fl[]=identifier,title,creator,year&sort[]=downloads+desc&rows=20&page=1&output=json",
+      { cache: "no-store" }
     );
-    const data = await res.json();
+    const data: any = await res.json();
 
-    const safeMovies = data.response.docs.filter((movie: any) => {
-      const title = movie.title.toLowerCase();
-      return SAFE_KEYWORDS.some((kw) => title.includes(kw));
-    }).map((m: any) => ({
-      id: m.identifier,
-      title: m.title,
-      creator: m.creator || "Unknown",
-      playableUrl: `https://archive.org/embed/${m.identifier}`
-    }));
+    const banned = ["sex", "porn", "hentai", "xxx", "nude"];
+    const movies = data.response.docs
+      .filter((d: any) => !banned.some((w) => d.title?.toLowerCase().includes(w)))
+      .map((d: any) => ({
+        id: d.identifier,
+        title: d.title,
+        year: d.year || "",
+        creator: d.creator || "Unknown",
+        thumbnail: `https://archive.org/download/${d.identifier}/__ia_thumb.jpg`,
+      }));
 
-    return NextResponse.json({
-      movies: safeMovies,
-      total: data.response.numFound,
-      page
-    });
-  } catch (error) {
-    console.error(error);
-    return NextResponse.json({ movies: [], total: 0, page: 1 });
+    return NextResponse.json(movies, { status: 200 });
+  } catch (err) {
+    console.error(err);
+    return NextResponse.json({ error: "Failed to load movies" }, { status: 500 });
   }
 }

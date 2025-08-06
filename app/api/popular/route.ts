@@ -1,15 +1,14 @@
-// app/api/popular/route.ts
 import { NextResponse } from "next/server";
 
 export async function GET() {
   try {
-    const banned = ["sex", "porn", "hentai", "xxx", "nude"];
     const res = await fetch(
-      `https://archive.org/advancedsearch.php?q=collection:feature_films+AND+mediatype:movies&fl[]=identifier,title,creator,year&sort[]=downloads+desc&rows=20&page=1&output=json`,
+      "https://archive.org/advancedsearch.php?q=collection:feature_films+AND+mediatype:movies&fl[]=identifier,title,creator,year&sort[]=downloads+desc&rows=20&page=1&output=json",
       { cache: "no-store" }
     );
-    const data = await res.json();
+    const data: any = await res.json();
 
+    const banned = ["sex", "porn", "hentai", "xxx", "nude"];
     const movies = data.response.docs
       .filter((d: any) => !banned.some((w) => d.title?.toLowerCase().includes(w)))
       .map((d: any) => ({
@@ -20,8 +19,9 @@ export async function GET() {
         thumbnail: `https://archive.org/download/${d.identifier}/__ia_thumb.jpg`,
       }));
 
-    return NextResponse.json(movies);
-  } catch {
-    return NextResponse.json({ error: "Failed to fetch popular movies" }, { status: 500 });
+    return NextResponse.json(movies, { status: 200 });
+  } catch (err) {
+    console.error(err);
+    return NextResponse.json({ error: "Failed to load popular movies" }, { status: 500 });
   }
 }

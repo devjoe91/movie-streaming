@@ -8,7 +8,7 @@ type FeaturedItem = {
   image: string;
 };
 
-const HERO_FEATURE_ID = "feature_films"; // You can adjust this to the main featured collection id
+// You can adjust this to the main featured collection id
 
 const Hero: React.FC = () => {
   const [featured, setFeatured] = useState<FeaturedItem | null>(null);
@@ -55,10 +55,11 @@ const Hero: React.FC = () => {
           {featured.description}
         </p>
 
-        <Link href={`/watch/${featured.id}`}>
-          <a className="inline-block bg-yellow-500 hover:bg-yellow-600 text-black font-semibold px-6 py-3 rounded transition">
-            Watch Now
-          </a>
+        <Link 
+          href={`/watch/${featured.id}`}
+          className="inline-block bg-yellow-500 hover:bg-yellow-600 text-black font-semibold px-6 py-3 rounded transition"
+        >
+          Watch Now
         </Link>
       </div>
     </section>
