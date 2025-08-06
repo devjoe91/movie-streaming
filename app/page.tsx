@@ -23,15 +23,55 @@ const CATEGORIES: Category[] = [
 ];
 
 async function fetchPopular(): Promise<Movie[]> {
-  const res = await fetch("/api/popular", { cache: "no-store" });
-  if (!res.ok) return [];
-  return res.json();
+  try {
+    const res = await fetch(
+      "https://archive.org/advancedsearch.php?q=collection:feature_films+AND+mediatype:movies&fl[]=identifier,title,creator,year&sort[]=downloads+desc&rows=20&page=1&output=json",
+      { cache: "no-store" }
+    );
+    const data: any = await res.json();
+
+    const banned = ["sex", "porn", "hentai", "xxx", "nude"];
+    const movies = data.response.docs
+      .filter((d: any) => !banned.some((w) => d.title?.toLowerCase().includes(w)))
+      .map((d: any) => ({
+        id: d.identifier,
+        title: d.title,
+        year: d.year || "",
+        creator: d.creator || "Unknown",
+        thumbnail: `https://archive.org/download/${d.identifier}/__ia_thumb.jpg`,
+      }));
+
+    return movies;
+  } catch (err) {
+    console.error(err);
+    return [];
+  }
 }
 
 async function fetchMovies(categoryId: string): Promise<Movie[]> {
-  const res = await fetch(`/api/movies/${categoryId}`, { cache: "no-store" });
-  if (!res.ok) return [];
-  return res.json();
+  try {
+    const banned = ["sex", "porn", "hentai", "xxx", "nude"];
+    const res = await fetch(
+      `https://archive.org/advancedsearch.php?q=collection:${categoryId}+AND+mediatype:movies&fl[]=identifier,title,creator,year&sort[]=downloads+desc&rows=12&page=1&output=json`,
+      { cache: "no-store" }
+    );
+    const data: any = await res.json();
+
+    const movies = data.response.docs
+      .filter((d: any) => !banned.some((w) => d.title?.toLowerCase().includes(w)))
+      .map((d: any) => ({
+        id: d.identifier,
+        title: d.title,
+        year: d.year || "",
+        creator: d.creator || "Unknown",
+        thumbnail: `https://archive.org/download/${d.identifier}/__ia_thumb.jpg`,
+      }));
+
+    return movies;
+  } catch (err) {
+    console.error(err);
+    return [];
+  }
 }
 
 export default async function HomePage() {
