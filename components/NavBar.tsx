@@ -30,24 +30,18 @@ export default function NavBar() {
   useEffect(() => {
     async function loadCategories() {
       try {
-        const res = await fetch("/api/categories");
-
-        if (!res.ok) {
-          throw new Error(`Failed to fetch categories: ${res.status}`);
-        }
-
-        const text = await res.text();
-
-        if (!text) {
-          console.warn("No categories returned from /api/categories");
-          setCategories([]);
-          return;
-        }
-
-        const data: Category[] = JSON.parse(text);
-        setCategories(data);
+        // Use static categories instead of API call
+        const staticCategories: Category[] = [
+          { id: "feature_films", title: "Feature Films" },
+          { id: "SciFi_Horror", title: "Sci‑Fi & Horror" },
+          { id: "Comedy_Films", title: "Comedy Films" },
+          { id: "short_films", title: "Short Films" },
+          { id: "animationandcartoons", title: "Animation & Cartoons" },
+          { id: "classic_tv", title: "Classic TV" },
+        ];
+        setCategories(staticCategories);
       } catch (err) {
-        console.error("Error fetching categories:", err);
+        console.error("Error loading categories:", err);
         setCategories([]);
       }
     }
@@ -71,17 +65,30 @@ export default function NavBar() {
   // Search handler
   useEffect(() => {
     if (search.trim().length > 1) {
-      const delayDebounce = setTimeout(() => {
-        fetch(`/api/search?q=${encodeURIComponent(search)}`)
-          .then((res) => res.json())
-          .then((data) => {
-            setResults(data);
-            setShowDropdown(true);
-          })
-          .catch((err) => {
-            console.error("Search fetch error:", err);
-            setResults([]);
-          });
+      const delayDebounce = setTimeout(async () => {
+        try {
+          const res = await fetch(
+            `https://archive.org/advancedsearch.php?q=${encodeURIComponent(search)}+AND+mediatype:movies&fl[]=identifier,title,creator,year&sort[]=downloads+desc&rows=10&page=1&output=json`
+          );
+          const data: any = await res.json();
+
+          const banned = ["sex", "porn", "hentai", "xxx", "nude"];
+          const movies = data.response.docs
+            .filter((d: any) => !banned.some((w) => d.title?.toLowerCase().includes(w)))
+            .map((d: any) => ({
+              id: d.identifier,
+              title: d.title,
+              year: d.year || "",
+              creator: d.creator || "Unknown",
+              thumbnail: `https://archive.org/download/${d.identifier}/__ia_thumb.jpg`,
+            }));
+
+          setResults(movies);
+          setShowDropdown(true);
+        } catch (err) {
+          console.error("Search fetch error:", err);
+          setResults([]);
+        }
       }, 300);
       return () => clearTimeout(delayDebounce);
     } else {
