@@ -2,7 +2,6 @@
 import Link from "next/link";
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/lib/supabaseClient";
-import LoginModal from "@/components/LoginModal";
 
 interface Category {
   id: string;
@@ -59,13 +58,13 @@ export default function NavBar() {
   // Fetch current user from Supabase
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => setUser(user));
-    const { data: authListener } = supabase.auth.onAuthStateChange(
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (_event, session) => {
         setUser(session?.user ?? null);
       }
     );
     return () => {
-      authListener.subscription.unsubscribe();
+      subscription.unsubscribe();
     };
   }, []);
 

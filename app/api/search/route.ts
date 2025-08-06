@@ -1,16 +1,32 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import { NextResponse } from "next/server";
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const query = searchParams.get("q") || "";
 
+  if (!query) {
+    return NextResponse.json([], { status: 200 });
+  }
+
   try {
-    const res = await fetch(`https://archive.org/...${encodeURIComponent(query)}`); // your real search URL
+    const res = await fetch(
+      `https://archive.org/advancedsearch.php?q=${encodeURIComponent(query)}+AND+mediatype:movies&fl[]=identifier,title,creator,year&sort[]=downloads+desc&rows=20&page=1&output=json`,
+      { cache: "no-store" }
+    );
     const data: any = await res.json();
 
-    return NextResponse.json(data, { status: 200 });
+    const banned = ["sex", "porn", "hentai", "xxx", "nude"];
+    const movies = data.response.docs
+      .filter((d: any) => !banned.some((w) => d.title?.toLowerCase().includes(w)))
+      .map((d: any) => ({
+        id: d.identifier,
+        title: d.title,
+        year: d.year || "",
+        creator: d.creator || "Unknown",
+        thumbnail: `https://archive.org/download/${d.identifier}/__ia_thumb.jpg`,
+      }));
+
+    return NextResponse.json(movies, { status: 200 });
   } catch (err) {
     console.error(err);
     return NextResponse.json({ error: "Search failed" }, { status: 500 });

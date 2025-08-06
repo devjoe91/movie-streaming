@@ -10,7 +10,7 @@ interface Movie {
 
 async function fetchCategoryMovies(categoryId: string, page: number): Promise<Movie[]> {
   const res = await fetch(
-    `http://localhost:3000/api/movies/${categoryId}?page=${page}`,
+    `/api/movies/${categoryId}?page=${page}`,
     { cache: "no-store" }
   );
   if (!res.ok) return [];
