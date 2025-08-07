@@ -1,6 +1,6 @@
 "use client";
 
-import { notFound } from "next/navigation";
+import { notFound, useParams } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabaseClient";
 import { useEffect, useState } from "react";
@@ -73,48 +73,49 @@ async function saveWatchHistory(userId: string, movieId: string) {
   }
 }
 
-export default function MoviePage({
-  params,
-}: {
-  params: { id: string };
-}) {
+export default function MoviePage() {
+  const { id } = useParams() as { id: string };
+
   const [movie, setMovie] = useState<MovieDetail | null>(null);
   const [related, setRelated] = useState<Movie[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  
+
   useEffect(() => {
+    if (!id) return;
+
     const loadData = async () => {
-      const { id } = params;
       setLoading(true);
       setError(null);
-      
+
       const movieData = await fetchMovieDetails(id);
       if (!movieData) {
         setError("Movie not found. The requested movie may not exist or may have been removed.");
         setLoading(false);
         return;
       }
-      
+
       setMovie(movieData);
-      
+
       try {
         const relatedMovies = await fetchRelatedMovies(id);
         setRelated(relatedMovies);
 
-        const { data: { user } } = await supabase.auth.getUser();
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
         if (user) {
           await saveWatchHistory(user.id, id);
         }
       } catch (err) {
         console.error("Error loading related content:", err);
       }
-      
+
       setLoading(false);
     };
 
     loadData();
-  }, [params]);
+  }, [id]);
 
   if (loading) {
     return (
@@ -134,8 +135,8 @@ export default function MoviePage({
           <div className="text-6xl mb-4">🎬</div>
           <h1 className="text-2xl font-bold mb-4">Movie Not Found</h1>
           <p className="text-gray-400 mb-6">{error}</p>
-          <Link 
-            href="/" 
+          <Link
+            href="/"
             className="inline-block bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg transition-colors"
           >
             Back to Home
