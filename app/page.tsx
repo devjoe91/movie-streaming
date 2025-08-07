@@ -17,17 +17,14 @@ interface Category {
   title: string;
 }
 
-const CATEGORIES: Category[] = [
-  { id: "feature_films", title: "Feature Films" },
-  { id: "SciFi_Horror", title: "Sci‑Fi & Horror" },
-  { id: "Comedy_Films", title: "Comedy Films" },
-  { id: "short_films", title: "Short Films" },
-  { id: "animationandcartoons", title: "Animation & Cartoons" },
-  { id: "classic_tv", title: "Classic TV" },
-];
-
 async function fetchPopular(): Promise<Movie[]> {
   const res = await fetch(`${BASE_URL}/api/popular`, { cache: "no-store" });
+  if (!res.ok) return [];
+  return res.json();
+}
+
+async function fetchCategories(): Promise<Category[]> {
+  const res = await fetch(`${BASE_URL}/api/categories`, { cache: "no-store" });
   if (!res.ok) return [];
   return res.json();
 }
@@ -40,6 +37,7 @@ async function fetchMovies(categoryId: string): Promise<Movie[]> {
 
 export default async function HomePage() {
   const popular = await fetchPopular();
+  const categories = await fetchCategories();
   const featuredMovie = popular[0];
 
   return (
@@ -75,7 +73,7 @@ export default async function HomePage() {
       {/* Categories Section */}
       <section className="flex-1 bg-[#1f1c17] text-white px-6 py-8">
         {await Promise.all(
-          CATEGORIES.map(async (cat) => {
+          categories.map(async (cat) => {
             const movies = await fetchMovies(cat.id);
             if (!movies.length) return null;
             return (
