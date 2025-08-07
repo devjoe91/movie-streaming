@@ -1,5 +1,9 @@
 import Link from "next/link";
 
+const BASE_URL = process.env.VERCEL_URL 
+  ? `https://${process.env.VERCEL_URL}` 
+  : 'http://localhost:3000';
+
 interface Movie {
   id: string;
   title: string;
@@ -10,7 +14,7 @@ interface Movie {
 
 async function fetchCategoryMovies(categoryId: string, page: number): Promise<Movie[]> {
   const res = await fetch(
-    `/api/movies/${categoryId}?page=${page}`,
+    `${BASE_URL}/api/movies/${categoryId}?page=${page}`,
     { cache: "no-store" }
   );
   if (!res.ok) return [];
