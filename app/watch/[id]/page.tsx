@@ -76,29 +76,74 @@ async function saveWatchHistory(userId: string, movieId: string) {
 export default function MoviePage({
   params,
 }: {
-  params: Promise<{ id: string }>;
+  params: { id: string };
 }) {
   const [movie, setMovie] = useState<MovieDetail | null>(null);
   const [related, setRelated] = useState<Movie[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   
   useEffect(() => {
     const loadData = async () => {
-      const { id } = await params; // ✅ unwrap Promise in Next.js 15
+      const { id } = params;
+      setLoading(true);
+      setError(null);
+      
       const movieData = await fetchMovieDetails(id);
-      if (!movieData) return notFound();
-      setMovie(movieData);
-
-      const relatedMovies = await fetchRelatedMovies(id);
-      setRelated(relatedMovies);
-
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        await saveWatchHistory(user.id, id);
+      if (!movieData) {
+        setError("Movie not found. The requested movie may not exist or may have been removed.");
+        setLoading(false);
+        return;
       }
+      
+      setMovie(movieData);
+      
+      try {
+        const relatedMovies = await fetchRelatedMovies(id);
+        setRelated(relatedMovies);
+
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          await saveWatchHistory(user.id, id);
+        }
+      } catch (err) {
+        console.error("Error loading related content:", err);
+      }
+      
+      setLoading(false);
     };
 
     loadData();
   }, [params]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#1f1c17] text-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
+          <p className="text-lg">Loading movie...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-[#1f1c17] text-white flex items-center justify-center">
+        <div className="text-center max-w-md mx-auto p-6">
+          <div className="text-6xl mb-4">🎬</div>
+          <h1 className="text-2xl font-bold mb-4">Movie Not Found</h1>
+          <p className="text-gray-400 mb-6">{error}</p>
+          <Link 
+            href="/" 
+            className="inline-block bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg transition-colors"
+          >
+            Back to Home
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   if (!movie) return null;
 
