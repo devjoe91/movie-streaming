@@ -29,7 +29,7 @@ async function fetchMovieDetails(id: string): Promise<MovieDetail | null> {
   const res = await fetch(`https://archive.org/metadata/${id}`, { cache: "no-store" });
   if (!res.ok) return null;
   const data = await res.json();
-  if (!data.metadata || !isSafeTitle(data.metadata.title)) return null;
+  if (!data.metadata) return null;
 
   const playableFile = data.files.find((f: any) =>
     f.name?.toLowerCase().endsWith(".mp4")
